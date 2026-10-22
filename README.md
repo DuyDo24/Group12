@@ -2,8 +2,8 @@ README.template
 
 ## Project Number/Title 
 
-* Authors: Your Name, and your group members’ names
-* Group name: Your Group Name
+* Authors: Duy Do, Zixi Khoo, Aiden Chan
+* Group name: 12
 
 ## Overview
 

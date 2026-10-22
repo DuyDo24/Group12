@@ -54,13 +54,26 @@ void my_mergesort(int left, int right){
     merge(left, mid, mid + 1, right);
 }
 
+/* we build the argument for the parallel_mergesort function. */
+struct argument * buildArgs(int left, int right, int level){
+	 struct argument *args = malloc(sizeof(struct argument));
+
+    if (args == NULL) {
+    	printf("Memory allocation failed\n");
+    	return NULL;
+	}
+
+    args->left = left;
+    args->right = right;
+    args->level = level;
+
+    return args;
+}
+
 /* this function will be called by the testing program. */
 void * parallel_mergesort(void *arg){
 		return NULL;
 }
 
-/* we build the argument for the parallel_mergesort function. */
-struct argument * buildArgs(int left, int right, int level){
-		return NULL;
-}
+
 
