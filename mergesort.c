@@ -3,6 +3,7 @@
  */
 
 #include <stdio.h>
+#include <pthread.h>
 #include <string.h> /* for memcpy */
 #include <stdlib.h> /* for malloc */
 #include "mergesort.h"
@@ -72,7 +73,38 @@ struct argument * buildArgs(int left, int right, int level){
 
 /* this function will be called by the testing program. */
 void * parallel_mergesort(void *arg){
-		return NULL;
+    struct argument *a = (struct argument *)arg;
+    int left = a->left;
+    int right = a->right;
+    int level = a->level;
+
+    if (left >= right)
+        return NULL;
+
+    if (level >= cutoff) {
+        my_mergesort(left, right);
+        return NULL;
+    }
+
+    int mid = left + (right - left) / 2;
+
+    struct argument *leftArg = buildArgs(left, mid, level + 1);
+    struct argument *rightArg = buildArgs(mid + 1, right, level + 1);
+
+    pthread_t leftThread, rightThread;
+
+    pthread_create(&leftThread, NULL, parallel_mergesort, leftArg);
+    pthread_create(&rightThread, NULL, parallel_mergesort, rightArg);
+
+    pthread_join(leftThread, NULL);
+    pthread_join(rightThread, NULL);
+
+    free(leftArg);
+    free(rightArg);
+
+    merge(left, mid, mid + 1, right);
+
+    return NULL;
 }
 
 
