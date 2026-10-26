@@ -57,12 +57,12 @@ void my_mergesort(int left, int right){
 
 /* we build the argument for the parallel_mergesort function. */
 struct argument * buildArgs(int left, int right, int level){
-	 struct argument *args = malloc(sizeof(struct argument));
+    struct argument *args = malloc(sizeof(struct argument));
 
     if (args == NULL) {
-    	printf("Memory allocation failed\n");
-    	return NULL;
-	}
+        fprintf(stderr, "Memory allocation failed\n");
+        return NULL;
+    }
 
     args->left = left;
     args->right = right;
@@ -73,6 +73,10 @@ struct argument * buildArgs(int left, int right, int level){
 
 /* this function will be called by the testing program. */
 void * parallel_mergesort(void *arg){
+
+    if (arg == NULL)
+        return NULL;
+
     struct argument *a = (struct argument *)arg;
     int left = a->left;
     int right = a->right;
@@ -91,13 +95,28 @@ void * parallel_mergesort(void *arg){
     struct argument *leftArg = buildArgs(left, mid, level + 1);
     struct argument *rightArg = buildArgs(mid + 1, right, level + 1);
 
+    if (leftArg == NULL || rightArg == NULL) {
+        free(leftArg);
+        free(rightArg);
+        my_mergesort(left, right);
+        return NULL;
+    }
+
     pthread_t leftThread, rightThread;
 
-    pthread_create(&leftThread, NULL, parallel_mergesort, leftArg);
-    pthread_create(&rightThread, NULL, parallel_mergesort, rightArg);
+    /* create a thread for each half then if creation fails then sort that half in this thread instead */
+    int leftCreated = (pthread_create(&leftThread, NULL, parallel_mergesort, leftArg) == 0);
+    if (!leftCreated)
+        my_mergesort(left, mid);
 
-    pthread_join(leftThread, NULL);
-    pthread_join(rightThread, NULL);
+    int rightCreated = (pthread_create(&rightThread, NULL, parallel_mergesort, rightArg) == 0);
+    if (!rightCreated)
+        my_mergesort(mid + 1, right);
+
+    if (leftCreated)
+        pthread_join(leftThread, NULL);
+    if (rightCreated)
+        pthread_join(rightThread, NULL);
 
     free(leftArg);
     free(rightArg);
@@ -106,6 +125,3 @@ void * parallel_mergesort(void *arg){
 
     return NULL;
 }
-
-
-
