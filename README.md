@@ -139,20 +139,14 @@ What parts of the project did you find challenging? Is there anything that
 finally "clicked" for you in the process of working on this project? How well
 did the development and testing process go for you?-->
 
-### Aidan Chan
+Our first version sorted correctly in normal tests, but when we reviewed it we found it never checked whether `buildArgs()` or `pthread_create()` succeeded, therefore it was missing NULL checks. Thus, we added three checks, including return early if the argument pointer is `NULL`, fall back to `my_mergesort()` if either `malloc()` in `buildArgs()` fails, and fall back to sorting a half in the current thread if `pthread_create()` fails, only joining threads that were actually created. When testing with 1,000,000 elements and cutoff 16, the OS refuses to create some of the tens of thousands of threads requested, and our original code printed `sorting failed!!!!`. After the fix it sorts correctly.
 
-My main contribution was making `parallel_mergesort()` robust and tidying the code for submission. Our first version sorted correctly in normal tests, but when I reviewed it I found it never checked whether `buildArgs()` or `pthread_create()` succeeded, therefore it was missing NULL checks. Thus, I added three checks, including return early if the argument pointer is `NULL`, fall back to `my_mergesort()` if either `malloc()` in `buildArgs()` fails, and fall back to sorting a half in the current thread if `pthread_create()` fails, only joining threads that were actually created. When testing with 1,000,000 elements and cutoff 16, the OS refuses to create some of the tens of thousands of threads requested, and our original code printed `sorting failed!!!!`. After the fix it sorts correctly.
+we made several mistakes while adding the `pthread_create()` check:
 
-I was also responsible for writing most of the README, which required a fundamental understanding of all the code written. 
+* We first named the success flags `left` and `right`. These clashed with the existing `left` and `right` index variables, so the compiler reported `redefinition of 'left'`. We learned that C does not let you redeclare a variable in the same scope, and that reusing a name would have overwritten the array indices even if it had compiled.
+* After renaming the flags to `leftCreated` and `rightCreated`, We missed the two `if` statements guarding `pthread_join()`, which still tested `left` and `right`. This compiled without warnings but sorting failed for most inputs. Because `left` is 0 for the leftmost child at every level, the parent skipped joining it, merged before the child had finished sorting, and freed the child's argument while it might still be in use. This was an example of a race condition, and it showed me why `pthread_join()` must happen before `merge()`, and that a program can compile cleanly and still be wrong.
 
-I made several mistakes while adding the `pthread_create()` check:
-
-* I first named the success flags `left` and `right`. These clashed with the existing `left` and `right` index variables, so the compiler reported `redefinition of 'left'`. I learned that C does not let you redeclare a variable in the same scope, and that reusing a name would have overwritten the array indices even if it had compiled.
-* After renaming the flags to `leftCreated` and `rightCreated`, I missed the two `if` statements guarding `pthread_join()`, which still tested `left` and `right`. This compiled without warnings but sorting failed for most inputs. Because `left` is 0 for the leftmost child at every level, the parent skipped joining it, merged before the child had finished sorting, and freed the child's argument while it might still be in use. This was an example of a race condition, and it showed me why `pthread_join()` must happen before `merge()`, and that a program can compile cleanly and still be wrong.
-
-Overall, testing went well once the bugs were fixed. All 360 correctness runs passed, there were no memory leaks, and we got about a 5.3x speedup on 100 million elements. The biggest lesson for me was that concurrency bugs often do not crash the program, they just produce wrong results. Therefore, testing with many sizes, cutoffs and seeds is essential.
-
-
+Overall, testing went well once the bugs were fixed. All 360 correctness runs passed, there were no memory leaks, and we got about a 5.3x speedup on 100 million elements. The biggest lesson for us was that concurrency bugs often do not crash the program, they just produce wrong results. Therefore, testing with many sizes, cutoffs and seeds is essential.
 
 
 ## Sources Used
